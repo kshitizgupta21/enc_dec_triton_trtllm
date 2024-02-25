@@ -1,0 +1,68 @@
+name: "tensorrt_llm_lora"
+backend: "python"
+max_batch_size: ${triton_max_batch_size}
+input: [
+    {
+        name: "input_ids"
+        data_type: TYPE_INT32
+        dims: [ -1 ]
+    },
+    {
+        name: "attention_mask"
+        data_type: TYPE_INT32
+        dims: [ -1 ]
+    },
+    {
+        name: "max_new_tokens"
+        data_type: TYPE_INT32
+        dims: [ -1 ]
+    },
+      {
+        name: "beam_width"
+        data_type: TYPE_INT32
+        dims: [ 1 ]
+        optional: true
+      }
+]
+output [
+   {
+    name: "output_ids"
+    data_type: TYPE_INT32
+    dims: [ -1, -1 ]
+  }
+]
+parameters {
+  key: "engine_dir"
+  value: {
+    string_value: "${engine_dir}"
+  }
+}
+parameters {
+  key: "engine_name"
+  value: {
+    string_value: "${engine_name}"
+  }
+}
+parameters {
+  key: "hf_model_dir"
+  value: {
+    string_value: "${hf_model_dir}"
+  }
+}
+parameters {
+  key: "lora_dir"
+  value: {
+    string_value: "${lora_dir}"
+  }
+}
+parameters {
+  key: "lora_task_uids"
+  value: {
+    string_value: "${lora_task_uids}"
+  }
+}
+instance_group {
+  count: 1
+  kind: KIND_GPU
+}
+
