@@ -43,13 +43,15 @@ class TritonPythonModel:
             batch_size = text_input.shape[0]                        
             tok_batch = []
             for i in range(batch_size):                
-                decoded_object = input_query[i, 0].decode()                                               
+                decoded_object = text_input[i, 0].decode()                                               
                 tok_batch.append(decoded_object)
                             
             tok_sent = self.tokenizer(tok_batch, return_tensors="np", padding=True)       
             output_tensors = [] 
             for output_name in self.output_names:
                 output = tok_sent.get(output_name).astype(self.output_dtypes[output_name])
-
-            responses.append(pb_utils.InferenceResponse([output_tensors]))
+                output_tensor = pb_utils.Tensor(output_name, output)
+                output_tensors.append(output_tensor)
+            inference_response = pb_utils.InferenceResponse(output_tensors = output_tensors)
+            responses.append(inference_response)
         return responses

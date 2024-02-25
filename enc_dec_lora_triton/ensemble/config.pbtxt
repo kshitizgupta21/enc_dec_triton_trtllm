@@ -10,7 +10,7 @@ input [
       {
         name: "max_new_tokens"
         data_type: TYPE_INT32
-        dims: [ -1 ]
+        dims: [ 1 ]
     },
       {
         name: "beam_width"

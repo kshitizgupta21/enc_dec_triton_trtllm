@@ -5,11 +5,28 @@ from run import TRTLLMEncDecModel
 import json
 import logging
 import triton_python_backend_utils as pb_utils
-
+from torch import from_numpy
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+def get_input_tensor_by_name(request, name):
+    tensor = pb_utils.get_input_tensor_by_name(request, name)
+    if tensor is not None:
+        # Triton tensor -> numpy tensor -> PyTorch tensor
+        return from_numpy(tensor.as_numpy())
+    else:
+        return tensor
 
+
+def get_input_scalar_by_name(request, name):
+    tensor = pb_utils.get_input_tensor_by_name(request, name)
+    if tensor is not None:
+        # Triton tensor -> numpy tensor -> first scalar
+        tensor = tensor.as_numpy()
+        return tensor.reshape((tensor.size, ))[0]
+    else:
+        return tensor
+        
 class TritonPythonModel:
     # Every Python model must have "TritonPythonModel" as the class name!
     def initialize(self, args):
@@ -42,7 +59,7 @@ class TritonPythonModel:
         engine_dir = model_config['parameters']['engine_dir']['string_value']
         lora_dir = model_config['parameters']['lora_dir']['string_value']
         engine_name = model_config['parameters']['engine_name']['string_value']
-        lora_task_uids = model_config['parameters']['engine_name']['string_value'].split()
+        lora_task_uids = model_config['parameters']['lora_task_uids']['string_value'].split()
         self.tllm_model = TRTLLMEncDecModel.from_engine(engine_name, engine_dir, lora_dir, lora_task_uids)
         self.output_dtype = pb_utils.triton_string_to_numpy(
             pb_utils.get_output_config_by_name(model_config, "output_ids")['data_type']
@@ -71,13 +88,11 @@ class TritonPythonModel:
         responses = []
         for request in requests:
             # extract input id and attention mask tensors from inpuy request
-            input_ids = pb_utils.get_input_tensor_by_name(request, "input_ids")
-            input_ids = torch.from_numpy(input_ids.as_numpy()).cuda()
-            attention_mask = pb_utils.get_input_tensor_by_name(request, "attention_mask")
-            attention_mask = torch.from_numpy(attention_mask.as_numpy()).cuda()
-            max_new_tokens = pb_utils.get_input_tensor_by_name(request, "max_new_tokens").as_numpy()
+            input_ids = get_input_tensor_by_name(request, "input_ids").cuda()
+            attention_mask = get_input_tensor_by_name(request, "attention_mask").cuda()
+            max_new_tokens = get_input_scalar_by_name(request, "max_new_tokens")
             num_beams = 1
-            beam_width = pb_utils.get_input_tensor_by_name(request, "beam_width")
+            beam_width = get_input_scalar_by_name(request, "beam_width")
             if beam_width is not None:
                 num_beams = beam_width
             decoder_input_ids = torch.IntTensor([[self.decoder_start_token_id]]).cuda()
