@@ -49,6 +49,6 @@ class TritonPythonModel:
         outputs = []
         for beam_tokens in tokens_batch:
             for tokens in beam_tokens:
-                output = self.tokenizer.decode(tokens)
+                output = self.tokenizer.decode(tokens, skip_special_tokens=True)
                 outputs.append(output.encode('utf8'))
         return outputs

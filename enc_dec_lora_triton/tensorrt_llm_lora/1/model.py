@@ -59,7 +59,7 @@ class TritonPythonModel:
         engine_dir = model_config['parameters']['engine_dir']['string_value']
         lora_dir = model_config['parameters']['lora_dir']['string_value']
         engine_name = model_config['parameters']['engine_name']['string_value']
-        lora_task_uids = model_config['parameters']['lora_task_uids']['string_value'].split()
+        lora_task_uids = ["0"]
         self.tllm_model = TRTLLMEncDecModel.from_engine(engine_name, engine_dir, lora_dir, lora_task_uids)
         self.output_dtype = pb_utils.triton_string_to_numpy(
             pb_utils.get_output_config_by_name(model_config, "output_ids")['data_type']
@@ -96,8 +96,9 @@ class TritonPythonModel:
             if beam_width is not None:
                 num_beams = beam_width
             decoder_input_ids = torch.IntTensor([[self.decoder_start_token_id]]).cuda()
-            decoder_input_ids = decoder_input_ids.repeat((input_ids.shape[0], 1))
-            
+            batch_size = input_ids.shape[0]
+            decoder_input_ids = decoder_input_ids.repeat((batch_size, 1))
+            self.tllm_model.lora_task_uids = self.tllm_model.lora_task_uids * batch_size
             output_ids = self.tllm_model.generate(
                                 encoder_input_ids=input_ids,
                                 decoder_input_ids=decoder_input_ids,
@@ -109,13 +110,7 @@ class TritonPythonModel:
                                 debug_mode=False,
                                 return_dict=False,  # when set return_dict=True, get outputs by key
                                 attention_mask=attention_mask)    
-            output_ids = output_ids.cpu().numpy().astype(self.output_dtype)
-            # logger.info(f"output_ids = {output_ids}")
-            # logger.info(f"output_ids shape = {output_ids.shape}")
-
-            # TODO figure out
-            #output_ids = output_ids[:, 0, :]
-            
+            output_ids = output_ids.cpu().numpy().astype(self.output_dtype)            
             output_ids_tensor = pb_utils.Tensor("output_ids", output_ids)
             inference_response = pb_utils.InferenceResponse(output_tensors=[output_ids_tensor])
             responses.append(inference_response)

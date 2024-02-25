@@ -1,7 +1,7 @@
-## Instructions for running enc-dec in Triton TRT-LLM through Python backend
+## Instructions for running LoRA enc-dec model in Triton TRT-LLM through Python backend
 
 ### 1. Optimize model with TRT-LLM
-1. Place the base BART model in `hf_base_model` and lora model in `hf_lora_model`. This is the expected directory structure
+1. Place the base BART/T5 model in `hf_base_model` and lora model in `hf_lora_model`. This is the expected directory structure
 ```
 ├── base_model
 │   ├── config.json
@@ -37,6 +37,9 @@ cp -r enc_dec_triton/preprocess triton_model_repo/
 cp -r enc_dec_triton/postprocess triton_model_repo/
 cp -r enc_dec_triton/ensemble triton_model_repo/
 cp -r enc_dec_triton/tensorrt_llm_lora triton_model_repo/
+
+# copy enc_dec python runtime script into model repository
+cp tensorrtllm_backend/tensorrt_llm/examples/enc_dec/run.py triton_model_repo/tensorrt_llm_lora/1/
 ```
 
 ### 2. Modify the model configuration
@@ -67,12 +70,11 @@ python3 fill_template.py -i triton_model_repo/preprocessing/config.pbtxt "triton
 | `engine_name` | The name of the engine, also specified during engine build time. Here setting to `bart_lora` |
 | `hf_model_dir` | Huggingface base model directory |
 | `lora_dir` | The path to directory containing Huggingface LoRa checkpoint. Here setting to `/workspace/hf_lora_model`|
-| `lora_task_uids` | Lora task uids, here setting to `"0 0"` |
 
 
 ```
 export HF_MODEL=/workspace/hf_base_model
-python3 fill_template.py -i triton_model_repo/tensorrt_llm_lora/config.pbtxt "triton_max_batch_size:8,engine_dir:/workspace/trt_engines/bart_lora/1-gpu/float16/tp1/,engine_name:bart_lora,hf_model_dir:${HF_MODEL},lora_dir:/workspace/hf_lora_model,lora_task_uids:0 0"
+python3 fill_template.py -i triton_model_repo/tensorrt_llm_lora/config.pbtxt "triton_max_batch_size:8,engine_dir:/workspace/trt_engines/bart_lora/1-gpu/float16/tp1/,engine_name:bart_lora,hf_model_dir:${HF_MODEL},lora_dir:/workspace/hf_lora_model
 ```
 
 #### Prepare postprocessing config.pbtxt
@@ -103,7 +105,7 @@ python3 fill_template.py -i triton_model_repo/ensemble/config.pbtxt "triton_max_
 
 ### 3. Launch Triton server
 
-Run this command to launch Triton server. Set `--world_size` = number of GPUs aka TP degree.
+Run this command to launch Triton server.
 
 ```
 tritonserver --model-repository triton_model_repo  
@@ -113,7 +115,7 @@ tritonserver --model-repository triton_model_repo
 [Query the server with the Triton generate endpoint](https://github.com/triton-inference-server/tensorrtllm_backend#query-the-server-with-the-triton-generate-endpoint)
 
 ```
-curl -X POST localhost:8000/v2/models/ensemble/generate -d '{"text_input": "Tayllor Swidt?", "max_tokens": 20}'
+curl -X POST localhost:8000/v2/models/ensemble/generate -d '{"text_input": "What is machine learning?", "max_new_tokens": 20}'
 ```
 
 

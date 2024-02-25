@@ -55,12 +55,6 @@ parameters {
     string_value: "${lora_dir}"
   }
 }
-parameters {
-  key: "lora_task_uids"
-  value: {
-    string_value: "${lora_task_uids}"
-  }
-}
 instance_group {
   count: 1
   kind: KIND_GPU
