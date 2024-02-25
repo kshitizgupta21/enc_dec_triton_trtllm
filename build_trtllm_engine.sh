@@ -1,0 +1,1 @@
+python tensorrtllm_backend/tensorrt_llm/examples/enc_dec/build.py --model_type bart --weight_dir trt_checkpoints/bart_lora/tp1 -o trt_engines/bart_lora/1-gpu/ --engine_name bart_lora --use_bert_attention_plugin --use_gpt_attention_plugin --use_gemm_plugin --use_lora_plugin --dtype float16 --max_beam_width 1

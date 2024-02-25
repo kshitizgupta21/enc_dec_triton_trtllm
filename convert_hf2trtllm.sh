@@ -1,0 +1,1 @@
+python tensorrtllm_backend/tensorrt_llm/examples/enc_dec/bart/convert.py -i hf_models/base_model --hf_lora_dir hf_models/lora_model/ -o trt_checkpoints/bart_lora/ --weight_data_type float16 --inference_tensor_para_size 1 

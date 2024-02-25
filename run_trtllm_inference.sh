@@ -1,0 +1,1 @@
+python tensorrtllm_backend/tensorrt_llm/examples/enc_dec/run.py --engine_dir trt_engines/bart_lora/1-gpu/float16/tp1/ --engine_name bart_lora --model_name hf_models/base_model --lora_dir hf_models/lora_model --max_new_token=64 --num_beams=1  --lora_task_uids 0 0
