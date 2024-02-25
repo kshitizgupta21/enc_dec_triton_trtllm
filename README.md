@@ -23,4 +23,4 @@ DOCKER_BUILDKIT=1 docker build -t triton_trt_llm -f dockerfile/Dockerfile.trt_ll
 docker run --rm -it --net host --shm-size=2g --ulimit memlock=-1 --ulimit stack=67108864 --gpus all -v $(pwd):/workspace -w /workspace  triton_trt_llm bash
 ```
 
-#### 4. For further steps see the README_nolora for regular enc-dec deployment and see README_lora for LoRa enc-dec Triton TRT-LLM deployment
+#### 4. For further steps see the README_encdec (Currently, WIP) for regular enc-dec deployment and see README_encdec_lora (Ready to Use) for LoRa enc-dec Triton TRT-LLM deployment

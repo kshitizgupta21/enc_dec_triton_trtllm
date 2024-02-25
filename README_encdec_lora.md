@@ -33,10 +33,10 @@ python tensorrtllm_backend/tensorrt_llm/examples/enc_dec/build.py --model_type b
 ### 1. Create Triton Model Repository and copy example config and scripts
 ```
 mkdir triton_model_repo
-cp -r enc_dec_triton/preprocess triton_model_repo/
-cp -r enc_dec_triton/postprocess triton_model_repo/
-cp -r enc_dec_triton/ensemble triton_model_repo/
-cp -r enc_dec_triton/tensorrt_llm_lora triton_model_repo/
+cp -r enc_dec_lora_triton/preprocess triton_model_repo/
+cp -r enc_dec_lora_triton/postprocess triton_model_repo/
+cp -r enc_dec_lora_triton/ensemble triton_model_repo/
+cp -r enc_dec_lora_triton/tensorrt_llm_lora triton_model_repo/
 
 # copy enc_dec python runtime script into model repository
 cp tensorrtllm_backend/tensorrt_llm/examples/enc_dec/run.py triton_model_repo/tensorrt_llm_lora/1/
