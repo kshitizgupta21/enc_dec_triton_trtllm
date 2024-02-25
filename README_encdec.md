@@ -1,7 +1,7 @@
 ## Instructions for running enc-dec model in Triton TRT-LLM through Python backend
 
 ### 1. Optimize model with TRT-LLM
-1. Place the BART/T5 model in `hf_models`
+1. Place the BART/T5 model in `hf_models`. Here we show T5 small model in this example.
 ```
 git clone https://huggingface.co/t5-small hf_models/t5-small
 ```
@@ -61,7 +61,7 @@ python3 fill_template.py -i triton_model_repo/preprocessing/config.pbtxt "triton
 
 ```
 export HF_MODEL=/workspace/hf_models/t5-small
-python3 fill_template.py -i triton_model_repo/tensorrt_llm/config.pbtxt "triton_max_batch_size:8,engine_dir:/workspace/trt_engines/t5/1-gpu/float16/tp1/,engine_name:t5,hf_model_dir:${HF_MODEL}"
+python3 fill_template.py -i triton_model_repo/tensorrt_llm/config.pbtxt "triton_max_batch_size:8,engine_dir:/workspace/trt_engines/t5/1-gpu/float16/tp1/,engine_name:t5,hf_model_dir:${HF_MODEL}
 ```
 
 #### Prepare postprocessing config.pbtxt
