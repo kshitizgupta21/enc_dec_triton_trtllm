@@ -45,11 +45,11 @@ class TritonPythonModel:
           * model_version: Model version
         """
         
-        # Read Max Batch Size from Triton Model config
+
         model_config = json.loads(args["model_config"])
-
+        # Read Max Batch Size from Triton Model config
+        max_batch_size = model_config['max_batch_size']
         hf_model_dir = model_config['parameters']['hf_model_dir']['string_value']
-
         hf_model_config = AutoConfig.from_pretrained(hf_model_dir)
         self.decoder_start_token_id = hf_model_config.decoder_start_token_id
         self.bos_token_id = hf_model_config.bos_token_id
@@ -59,7 +59,13 @@ class TritonPythonModel:
         engine_dir = model_config['parameters']['engine_dir']['string_value']
         lora_dir = model_config['parameters']['lora_dir']['string_value']
         engine_name = model_config['parameters']['engine_name']['string_value']
-        lora_task_uids = ["0"]
+        # if user has not specified lora adapter dir then we use base model instead
+        if lora_dir == "${lora_dir}":
+            # not using LoRA, use base model instead
+            lora_task_uids = ["-1"] * max_batch_size
+            lora_dir = None
+        else:
+            lora_task_uids = ["0"] * max_batch_size
         self.tllm_model = TRTLLMEncDecModel.from_engine(engine_name, engine_dir, lora_dir, lora_task_uids)
         self.output_dtype = pb_utils.triton_string_to_numpy(
             pb_utils.get_output_config_by_name(model_config, "output_ids")['data_type']
@@ -98,7 +104,6 @@ class TritonPythonModel:
             decoder_input_ids = torch.IntTensor([[self.decoder_start_token_id]]).cuda()
             batch_size = input_ids.shape[0]
             decoder_input_ids = decoder_input_ids.repeat((batch_size, 1))
-            self.tllm_model.lora_task_uids = self.tllm_model.lora_task_uids * batch_size
             output_ids = self.tllm_model.generate(
                                 encoder_input_ids=input_ids,
                                 decoder_input_ids=decoder_input_ids,

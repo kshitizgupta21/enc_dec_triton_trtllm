@@ -1,4 +1,4 @@
-name: "tensorrt_llm_lora"
+name: "tensorrt_llm"
 backend: "python"
 max_batch_size: ${triton_max_batch_size}
 input: [

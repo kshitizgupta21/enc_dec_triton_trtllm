@@ -1,11 +1,10 @@
 ## Instructions for running enc-dec model in Triton TRT-LLM through Python backend
 
 ### 1. Optimize model with TRT-LLM
-1. Place the BART/T5 model in `hf_models`. Here we show T5 small model in this example.
+1. Place the BART/T5 model in `hf_models`. Currently, only `pytorch_model.bin` format is supported and `safetensors` format is not supported yet for enc-dec. Here we show T5 small model in this example.
 ```
 git clone https://huggingface.co/t5-small hf_models/t5-small
 ```
-
 
 3. Convert HF checkpoint to TRT checkpoint format
 ```
@@ -21,13 +20,16 @@ python tensorrtllm_backend/tensorrt_llm/examples/enc_dec/build.py --model_type t
 ### 1. Create Triton Model Repository and copy example config and scripts
 ```
 mkdir triton_model_repo
-cp -r enc_dec_triton/preprocess triton_model_repo/
-cp -r enc_dec_triton/postprocess triton_model_repo/
+cp -r enc_dec_triton/preprocessing triton_model_repo/
+cp -r enc_dec_triton/postprocessing triton_model_repo/
 cp -r enc_dec_triton/ensemble triton_model_repo/
-cp -r enc_dec_triton/tensorrt_llm_lora triton_model_repo/
+cp -r enc_dec_triton/tensorrt_llm triton_model_repo/
 
-# copy enc_dec python runtime script into model repository
-cp tensorrtllm_backend/tensorrt_llm/examples/enc_dec/run.py triton_model_repo/tensorrt_llm_lora/1/
+```
+
+#### copy enc_dec python runtime script into model repository
+```
+cp tensorrtllm_backend/tensorrt_llm/examples/enc_dec/run.py triton_model_repo/tensorrt_llm/1/
 ```
 
 ### 2. Modify the model configuration
@@ -47,9 +49,9 @@ The following table shows the fields that need to be modified before deployment:
 export HF_MODEL=/workspace/hf_models/t5-small
 python3 fill_template.py -i triton_model_repo/preprocessing/config.pbtxt "triton_max_batch_size:8,tokenizer_dir:${HF_MODEL},preprocessing_instance_count:1"
 ```
-#### Pepare tensorrt_llm_lora model config.pbtxt
+#### Pepare tensorrt_llm model config.pbtxt
 
-*triton_model_repo/tensorrt_llm_lora/config.pbtxt*
+*triton_model_repo/tensorrt_llm/config.pbtxt*
 
 | Name | Description
 | :----------------------: | :-----------------------------: |
@@ -61,7 +63,7 @@ python3 fill_template.py -i triton_model_repo/preprocessing/config.pbtxt "triton
 
 ```
 export HF_MODEL=/workspace/hf_models/t5-small
-python3 fill_template.py -i triton_model_repo/tensorrt_llm/config.pbtxt "triton_max_batch_size:8,engine_dir:/workspace/trt_engines/t5/1-gpu/float16/tp1/,engine_name:t5,hf_model_dir:${HF_MODEL}
+python3 fill_template.py -i triton_model_repo/tensorrt_llm/config.pbtxt "triton_max_batch_size:8,engine_dir:/workspace/trt_engines/t5/1-gpu/float16/tp1/,engine_name:t5,hf_model_dir:${HF_MODEL}"
 ```
 
 #### Prepare postprocessing config.pbtxt
@@ -102,7 +104,7 @@ tritonserver --model-repository triton_model_repo
 [Query the server with the Triton generate endpoint](https://github.com/triton-inference-server/tensorrtllm_backend#query-the-server-with-the-triton-generate-endpoint)
 
 ```
-curl -X POST localhost:8000/v2/models/ensemble/generate -d '{"text_input": "What is machine learning?", "max_new_tokens": 20}'
+curl -X POST localhost:8000/v2/models/ensemble/generate -d '{"text_input": "Translate English to German: This is good", "max_new_tokens": 50}'
 ```
 
 

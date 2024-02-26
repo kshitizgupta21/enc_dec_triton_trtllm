@@ -1,17 +1,16 @@
 ## Instructions for running LoRA enc-dec model in Triton TRT-LLM through Python backend
 
 ### 1. Optimize model with TRT-LLM
-1. Place the base BART/T5 model in `hf_base_model` and lora model in `hf_lora_model`. This is the expected directory structure
+1. Place the base BART/T5 model in `hf_base_model` and lora model in `hf_lora_model`. Currently, only `pytorch_model.bin` format is supported and `safetensors` format is not supported yet for enc-dec. This is the expected directory structure
 ```
 ├── base_model
 │   ├── config.json
 │   ├── generation_config.json
 │   ├── merges.txt
-│   ├── model.safetensors
 │   ├── special_tokens_map.json
 │   ├── tokenizer.json
 │   ├── tokenizer_config.json
-│   ├── training_args.bin
+│   ├── pytorch_model.bin
 │   └── vocab.json
 └── lora_model
     ├── adapter_config.json
@@ -25,21 +24,23 @@ python tensorrtllm_backend/tensorrt_llm/examples/enc_dec/bart/convert.py -i hf_b
 ```
 
 3. Build TRT-LLM engine
+** NOTE: CURRENTLY, building engine with --remove_input_padding is not supported with enc_dec LoRA, so we skip it in the command below
 ```
-python tensorrtllm_backend/tensorrt_llm/examples/enc_dec/build.py --model_type bart --weight_dir trt_checkpoints/bart_lora/tp1 -o trt_engines/bart_lora/1-gpu/ --engine_name bart_lora --use_bert_attention_plugin --use_gpt_attention_plugin --use_gemm_plugin --use_lora_plugin --dtype float16 --max_beam_width 1 --remove_input_padding
+python tensorrtllm_backend/tensorrt_llm/examples/enc_dec/build.py --model_type bart --weight_dir trt_checkpoints/bart_lora/tp1 -o trt_engines/bart_lora/1-gpu/ --engine_name bart_lora --use_bert_attention_plugin --use_gpt_attention_plugin --use_gemm_plugin --use_lora_plugin --dtype float16 --max_beam_width 1 
 ```
 
 ## 2. Deploy TRT-LLM engine through Triton Python backend
 ### 1. Create Triton Model Repository and copy example config and scripts
 ```
 mkdir triton_model_repo
-cp -r enc_dec_lora_triton/preprocess triton_model_repo/
-cp -r enc_dec_lora_triton/postprocess triton_model_repo/
+cp -r enc_dec_lora_triton/preprocessing triton_model_repo/
+cp -r enc_dec_lora_triton/postprocessing triton_model_repo/
 cp -r enc_dec_lora_triton/ensemble triton_model_repo/
 cp -r enc_dec_lora_triton/tensorrt_llm_lora triton_model_repo/
-
-# copy enc_dec python runtime script into model repository
-cp tensorrtllm_backend/tensorrt_llm/examples/enc_dec/run.py triton_model_repo/tensorrt_llm_lora/1/
+```
+#### copy enc_dec python runtime script into model repository
+```
+cp tensorrtllm_backend/tensorrt_llm/examples/enc_dec/run.py triton_model_repo/tensorrt_llm/1/
 ```
 
 ### 2. Modify the model configuration
